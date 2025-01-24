@@ -14,12 +14,19 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	jobsManager := jobs.CreateJobManager()
+
 	// Git data
 	j1 := jobs.CreateJob("git up", 5, "critical")
 	j2 := jobs.CreateJob("soja", 10, "normal")
 
-	//Start process
-	jobs.RunAll([]*jobs.Job{j1, j2})
+	//Register jobs
+	jobsManager.RegisterJob(j1)
+	jobsManager.RegisterJob(j2)
+
+	//Spin up jobs
+	jobsManager.RunAllJobs()
 
 	for {
 		time.Sleep(time.Second)

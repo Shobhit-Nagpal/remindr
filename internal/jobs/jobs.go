@@ -2,7 +2,6 @@ package jobs
 
 import (
 	"fmt"
-	"log"
 	"os/exec"
 	"time"
 
@@ -41,30 +40,6 @@ func CreateJob(message string, interval float32, level Level) *Job {
 	}
 }
 
-func ScheduleJob(job *Job) *time.Ticker {
-	ticker := time.NewTicker(job.Interval())
-	return ticker
-}
-
-func RunAll(jobs []*Job) {
-	for _, job := range jobs {
-		ticker := ScheduleJob(job)
-
-		fmt.Printf("\nScheduled job %s, for %s interval\n", job.ID(), job.Interval().String())
-
-		go func() {
-			for {
-				select {
-				case <-ticker.C:
-					cmd := exec.Command("notify-send", "-u", fmt.Sprintf("%s", job.Level()), "-t", "5000", job.Message())
-					if err := cmd.Run(); err != nil {
-						log.Fatal(err)
-					}
-				}
-			}
-		}()
-	}
-}
 
 // Methods
 
@@ -107,4 +82,12 @@ func (j *Job) Active() bool {
 
 func (j *Job) SetActive(active bool) {
 	j.active = active
+}
+
+func (j *Job) Notify() error {
+	cmd := exec.Command("notify-send", "-u", fmt.Sprintf("%s", j.Level()), "-t", "5000", j.Message())
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	return nil
 }
