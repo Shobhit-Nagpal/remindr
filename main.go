@@ -1,29 +1,27 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"os/exec"
 	"time"
+
+	"github.com/Shobhit-Nagpal/remindr/internal/db"
+	"github.com/Shobhit-Nagpal/remindr/internal/jobs"
 )
 
 func main() {
-	fmt.Println("Hello from Remindr")
+	// Initialize local db / dotfolder
+	err := db.InitDB()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Git data
+	j1 := jobs.CreateJob("git up", 5, "critical")
+	j2 := jobs.CreateJob("soja", 10, "normal")
 
-	ticker := time.NewTicker(5 * time.Second)
+	//Start process
+	jobs.RunAll([]*jobs.Job{j1, j2})
 
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				notifyCmd := exec.Command("notify-send", "get up, bhai. kya ho raha hai")
-				if err := notifyCmd.Run(); err != nil {
-					log.Fatal(err)
-				}
-
-			}
-		}
-	}()
-
-  time.Sleep(30 * time.Second)
+	for {
+		time.Sleep(time.Second)
+	}
 }
