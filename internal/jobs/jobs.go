@@ -22,6 +22,7 @@ type Job struct {
 	message   string
 	interval  time.Duration
 	level     Level
+	active    bool
 	createdAt time.Time
 }
 
@@ -35,6 +36,7 @@ func CreateJob(message string, interval float32, level Level) *Job {
 		message:   message,
 		interval:  time.Duration(interval) * time.Second,
 		level:     level,
+		active:    true,
 		createdAt: time.Now(),
 	}
 }
@@ -48,7 +50,7 @@ func RunAll(jobs []*Job) {
 	for _, job := range jobs {
 		ticker := ScheduleJob(job)
 
-    fmt.Printf("\nScheduled job %s, for %s interval\n", job.ID(), job.Interval().String())
+		fmt.Printf("\nScheduled job %s, for %s interval\n", job.ID(), job.Interval().String())
 
 		go func() {
 			for {
@@ -97,4 +99,12 @@ func (j *Job) SetLevel(level Level) {
 	default:
 		j.level = NORMAL
 	}
+}
+
+func (j *Job) Active() bool {
+	return j.active
+}
+
+func (j *Job) SetActive(active bool) {
+	j.active = active
 }
