@@ -23,15 +23,6 @@ func GetDBPath() (string, error) {
 	return fmt.Sprintf("%s/.remindr", homeDir), nil
 }
 
-func CreateDBFile(dir string) error {
-	fileName := fmt.Sprintf("%s/db.json", dir)
-	_, err := os.Create(fileName)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 func GetDBFile() (string, error) {
 	dbPath, err := GetDBPath()

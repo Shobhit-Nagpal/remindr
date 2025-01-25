@@ -17,7 +17,7 @@ const (
 )
 
 type Job struct {
-	id        uuid.UUID
+  id        uuid.UUID
 	message   string
 	interval  time.Duration
 	level     Level
@@ -90,4 +90,8 @@ func (j *Job) Notify() error {
 		return err
 	}
 	return nil
+}
+
+func (j *Job) CreatedAt() time.Time {
+	return j.createdAt
 }

@@ -27,7 +27,19 @@ func (jm *JobManager) RegisterJob(job *Job) {
 	jm.jobs[job.ID()] = job
 }
 
-func (jm *JobManager) ListAllJobs() {
+func (jm *JobManager) RegisterJobs(jobs []*Job) {
+	for _, job := range jobs {
+		jm.RegisterJob(job)
+	}
+}
+
+func (jm *JobManager) GetAllJobs() map[uuid.UUID]*Job {
+	jobs := []*Job{}
+	for _, job := range jm.jobs {
+		jobs = append(jobs, job)
+	}
+
+	return jm.jobs
 }
 
 func (jm *JobManager) ListActiveJobs() {

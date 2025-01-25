@@ -1,6 +1,8 @@
 package db
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/Shobhit-Nagpal/remindr/internal/jobs"
@@ -23,7 +25,7 @@ func InitDB() error {
 			return err
 		}
 
-		err = utils.CreateDBFile(dbPath)
+		err = createDBFile(dbPath)
 		if err != nil {
 			return err
 		}
@@ -32,6 +34,48 @@ func InitDB() error {
 	return nil
 }
 
-func GetAllJobs() []jobs.Job {
-	return []jobs.Job{}
+func createDBFile(dir string) error {
+	fileName := fmt.Sprintf("%s/db.json", dir)
+	file, err := os.Create(fileName)
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+
+	db := DB{
+		Jobs: []jobs.Job{},
+	}
+
+	data, err := json.Marshal(db)
+	if err != nil {
+		return err
+	}
+
+	_, err = file.Write(data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetAllJobs() ([]*jobs.Job, error) {
+	jobs := []*jobs.Job{}
+	filePath, err := utils.GetDBFile()
+	if err != nil {
+		return jobs, err
+	}
+
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return jobs, err
+	}
+
+	err = json.Unmarshal(data, &jobs)
+	if err != nil {
+		return jobs, err
+	}
+
+	return jobs, nil
 }
