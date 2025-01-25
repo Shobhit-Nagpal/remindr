@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/Shobhit-Nagpal/remindr/internal/db"
 	"github.com/Shobhit-Nagpal/remindr/internal/jobs"
 )
 
 var managerKey string = "manager"
+var dbKey string = "db"
 
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) error {
 	response, err := json.Marshal(payload)
@@ -28,6 +30,15 @@ func respondWithError(w http.ResponseWriter, code int, msg string) error {
 
 func getManager(r *http.Request) *jobs.JobManager {
 	manager, ok := r.Context().Value(managerKey).(*jobs.JobManager)
+	if !ok {
+		return nil
+	}
+
+	return manager
+}
+
+func getDB(r *http.Request) *db.DB {
+	manager, ok := r.Context().Value(dbKey).(*db.DB)
 	if !ok {
 		return nil
 	}

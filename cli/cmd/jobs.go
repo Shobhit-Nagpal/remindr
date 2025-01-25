@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,24 +11,23 @@ import (
 	"time"
 
 	"github.com/Shobhit-Nagpal/remindr/internal/jobs"
-	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
 type JobPayload struct {
-	ID        uuid.UUID     `json:"id"`
-	Message   string        `json:"message"`
-	Interval  time.Duration `json:"interval"`
-	Level     jobs.Level         `json:"level"`
-	Active    bool          `json:"active"`
-	CreatedAt time.Time     `json:"created_at"`
+	ID        string  `json:"id"`
+	Message   string     `json:"message"`
+	Interval  int        `json:"interval"`
+	Level     jobs.Level `json:"level"`
+	Active    bool       `json:"active"`
+	CreatedAt time.Time  `json:"created_at"`
 }
 
 func init() {
 	// Add flags
 	listCmd.Flags().Bool("all", false, "Show all reminders, including inactive ones")
 
-	createCmd.Flags().Float32("interval", 600, "Interval after which reminder notification pops up (in seconds)")
+	createCmd.Flags().Int("interval", 6, "Interval after which reminder notification pops up (in seconds)")
 	createCmd.Flags().String("level", "normal", "Urgency level of the reminder notification")
 
 	//Add sub comands
@@ -42,16 +42,12 @@ var listCmd = &cobra.Command{
 	Short: "Sub command for listing reminders",
 	Long:  `Fill this later`,
 	Run: func(cmd *cobra.Command, args []string) {
-    res, err := http.Get("http://localhost:5678/api/reminders")
+		res, err := http.Get("http://localhost:5678/api/reminders")
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		defer res.Body.Close()
-
-		if res.StatusCode != http.StatusOK {
-			log.Fatalf("Error getting jobs\n")
-		}
 
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
@@ -65,9 +61,13 @@ var listCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-    for _, job := range jobs {
-      fmt.Println(job)
-    }
+		if len(jobs) == 0 {
+			fmt.Println("No jobs running")
+		}
+
+		for _, job := range jobs {
+			fmt.Println(job)
+		}
 
 	},
 }
@@ -84,8 +84,39 @@ var createCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Message of create command", args[0])
-		fmt.Println("Create deez")
+		message := args[0]
+
+		level, err := cmd.Flags().GetString("level")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		interval, err := cmd.Flags().GetInt("interval")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		job := jobs.CreateJob(message, interval, jobs.Level(level))
+
+		payload := JobPayload{
+			ID:        job.ID,
+			Message:   job.Message,
+			Interval:  interval,
+			Level:     job.Level,
+			Active:    job.Active,
+			CreatedAt: job.CreatedAt,
+		}
+
+		jobData, err := json.Marshal(payload)
+
+		res, err := http.Post("http://localhost:5678/api/reminders", "application/json", bytes.NewBuffer(jobData))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if res.StatusCode == http.StatusCreated {
+			fmt.Println("Job created and active")
+		}
 	},
 }
 

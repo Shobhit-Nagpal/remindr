@@ -17,81 +17,56 @@ const (
 )
 
 type Job struct {
-  id        uuid.UUID
-	message   string
-	interval  time.Duration
-	level     Level
-	active    bool
-	createdAt time.Time
+	ID        string    `json:"id"`
+	Message   string    `json:"message"`
+	Interval  int       `json:"interval"`
+	Level     Level     `json:"level"`
+	Active    bool      `json:"active"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // Functions
 
-func CreateJob(message string, interval float32, level Level) *Job {
+func CreateJob(message string, interval int, level Level) *Job {
 	id := uuid.New()
 
 	return &Job{
-		id:        id,
-		message:   message,
-		interval:  time.Duration(interval) * time.Second,
-		level:     level,
-		active:    true,
-		createdAt: time.Now(),
+		ID:       id.String(),
+		Message:  message,
+		Interval: interval,
+		Level:    level,
+		Active:   true,
+		//		createdAt: time.Now(),
 	}
 }
 
-
 // Methods
 
-func (j *Job) ID() uuid.UUID {
-	return j.id
-}
-
-func (j *Job) Message() string {
-	return j.message
-}
-
 func (j *Job) SetMessage(message string) {
-	j.message = message
+	j.Message = message
 }
 
-func (j *Job) Interval() time.Duration {
-	return j.interval
-}
-
-func (j *Job) SetInterval(interval float32) {
-	j.interval = time.Duration(interval) * time.Second
-}
-
-func (j *Job) Level() Level {
-	return j.level
+func (j *Job) SetInterval(interval int) {
+	j.Interval = interval
 }
 
 func (j *Job) SetLevel(level Level) {
 	switch level {
 	case LOW, NORMAL, CRITICAL:
-		j.level = level
+		j.Level = level
 	default:
-		j.level = NORMAL
+		j.Level = NORMAL
 	}
 }
 
-func (j *Job) Active() bool {
-	return j.active
-}
-
 func (j *Job) SetActive(active bool) {
-	j.active = active
+	j.Active = active
 }
 
 func (j *Job) Notify() error {
-	cmd := exec.Command("notify-send", "-u", fmt.Sprintf("%s", j.Level()), "-t", "5000", j.Message())
+	cmd := exec.Command("notify-send", "-u", fmt.Sprintf("%s", j.Level), "-t", "5000", j.Message)
 	if err := cmd.Run(); err != nil {
 		return err
 	}
 	return nil
-}
-
-func (j *Job) CreatedAt() time.Time {
-	return j.createdAt
 }

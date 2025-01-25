@@ -5,12 +5,18 @@ import (
 
 	"github.com/Shobhit-Nagpal/remindr/internal/db"
 	"github.com/Shobhit-Nagpal/remindr/internal/jobs"
+	"github.com/Shobhit-Nagpal/remindr/internal/utils"
 	"github.com/Shobhit-Nagpal/remindr/server/api"
 )
 
 func main() {
 	// Initialize local db / dotfolder
-	err := db.InitDB()
+  dir, err := utils.GetDBPath()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+  database, err := db.NewDB(dir, "db.json")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -18,21 +24,21 @@ func main() {
 	jobsManager := jobs.CreateJobManager()
 
 	// Git data
-	allJobs, err := db.GetAllJobs()
+	reminders, err := database.GetAllJobs()
+
+  allJobs := []*jobs.Job{}
+
+  for _, reminder := range reminders {
+    allJobs = append(allJobs, &reminder)
+  }
 
 	//Register jobs
 	jobsManager.RegisterJobs(allJobs)
 
-	job := jobs.CreateJob("yooooo", 6, "normal")
-	job2 := jobs.CreateJob("namaste", 10, "critical")
-
-	jobsManager.RegisterJob(job)
-	jobsManager.RegisterJob(job2)
-
 	//Spin up jobs
 	jobsManager.RunAllJobs()
 
-	server := api.NewServer(jobsManager)
+	server := api.NewServer(database, jobsManager)
 
 	server.ListenAndServe()
 }

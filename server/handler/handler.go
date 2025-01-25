@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"encoding/json"
+	"fmt"
 	"io"
+	"log"
 	"net/http"
 )
 
@@ -18,24 +21,29 @@ func Index(w http.ResponseWriter, req *http.Request) {
 }
 
 func GetReminders(w http.ResponseWriter, req *http.Request) {
-	manager := getManager(req)
-	if manager == nil {
-		respondWithError(w, http.StatusInternalServerError, "Manager not found")
+	db := getDB(req)
+	if db == nil {
+		respondWithError(w, http.StatusInternalServerError, "DB not found")
 		return
 	}
 
-	reminders := manager.GetAllJobs()
+	reminders, err := db.GetAllJobs()
+	if err != nil {
+		log.Print(err)
+		respondWithError(w, http.StatusInternalServerError, "Couldn't read jobs")
+		return
+	}
 
 	response := []*JobPayload{}
 
 	for _, reminder := range reminders {
 		response = append(response, &JobPayload{
-			ID:       reminder.ID(),
-			Message:  reminder.Message(),
-			Interval: reminder.Interval(),
-			Level:    reminder.Level(),
-      Active: reminder.Active(),
-      CreatedAt: reminder.CreatedAt(),
+			ID:        reminder.ID,
+			Message:   reminder.Message,
+			Interval:  int(reminder.Interval),
+			Level:     reminder.Level,
+			Active:    reminder.Active,
+			CreatedAt: reminder.CreatedAt,
 		})
 	}
 
@@ -44,6 +52,53 @@ func GetReminders(w http.ResponseWriter, req *http.Request) {
 }
 
 func CreateReminder(w http.ResponseWriter, req *http.Request) {
+	db := getDB(req)
+	if db == nil {
+		respondWithError(w, http.StatusInternalServerError, "DB not found")
+		return
+	}
+
+	manager := getManager(req)
+	if manager == nil {
+		respondWithError(w, http.StatusInternalServerError, "Manager not found")
+		return
+	}
+
+	reminder := JobPayload{}
+
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't read body")
+		return
+	}
+	defer req.Body.Close()
+
+	err = json.Unmarshal(body, &reminder)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't unmarshal reminder from body")
+		return
+	}
+
+	job, err := db.CreateJob(reminder.Message, reminder.Interval, string(reminder.Level))
+	if err != nil {
+		fmt.Println(err)
+		respondWithError(w, http.StatusInternalServerError, "Couldn't create reminder")
+		return
+	}
+
+	manager.RegisterJob(job)
+	manager.RunJob(job)
+
+	response := JobPayload{
+		ID:        job.ID,
+		Message:   job.Message,
+		Interval:  int(job.Interval),
+		Level:     job.Level,
+		Active:    job.Active,
+		CreatedAt: job.CreatedAt,
+	}
+
+	respondWithJSON(w, http.StatusCreated, response)
 }
 
 func DeleteReminder(w http.ResponseWriter, req *http.Request) {

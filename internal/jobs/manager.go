@@ -4,27 +4,25 @@ import (
 	"fmt"
 	"log"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type JobManager struct {
-	jobs map[uuid.UUID]*Job
+	jobs map[string]*Job
 }
 
 func CreateJobManager() *JobManager {
 	return &JobManager{
-		jobs: map[uuid.UUID]*Job{},
+		jobs: map[string]*Job{},
 	}
 }
 
 func (jm *JobManager) RegisterJob(job *Job) {
-	if _, exists := jm.jobs[job.ID()]; exists {
+	if _, exists := jm.jobs[job.ID]; exists {
 		fmt.Printf("Job already registered")
 		return
 	}
 
-	jm.jobs[job.ID()] = job
+	jm.jobs[job.ID] = job
 }
 
 func (jm *JobManager) RegisterJobs(jobs []*Job) {
@@ -33,7 +31,7 @@ func (jm *JobManager) RegisterJobs(jobs []*Job) {
 	}
 }
 
-func (jm *JobManager) GetAllJobs() map[uuid.UUID]*Job {
+func (jm *JobManager) GetAllJobs() map[string]*Job {
 	jobs := []*Job{}
 	for _, job := range jm.jobs {
 		jobs = append(jobs, job)
@@ -47,26 +45,34 @@ func (jm *JobManager) ListActiveJobs() {
 	//Print a table here
 }
 
-func (jm *JobManager) ScheduleJob(id uuid.UUID) *time.Ticker {
-	ticker := time.NewTicker(jm.jobs[id].Interval())
+func (jm *JobManager) ScheduleJob(id string) *time.Ticker {
+	ticker := time.NewTicker(time.Duration(jm.jobs[id].Interval) * time.Second)
 	return ticker
 }
 
 func (jm *JobManager) RunAllJobs() {
 	for _, job := range jm.jobs {
-		ticker := jm.ScheduleJob(job.ID())
 
-		fmt.Printf("\nScheduled job %s, for %s interval\n", job.ID(), job.Interval().String())
-		go func() {
-			for {
-				select {
-				case <-ticker.C:
-					err := job.Notify()
-					if err != nil {
-						log.Fatal(err)
-					}
+		if !job.Active {
+			continue
+		}
+		jm.RunJob(job)
+	}
+}
+
+func (jm *JobManager) RunJob(job *Job) {
+	ticker := jm.ScheduleJob(job.ID)
+
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				err := job.Notify()
+				if err != nil {
+					log.Fatal(err)
 				}
 			}
-		}()
-	}
+		}
+	}()
+
 }
