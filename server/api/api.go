@@ -17,6 +17,7 @@ func NewServer(database *db.DB, manager *jobs.JobManager) *http.Server {
 
 	mux.HandleFunc("GET /api/reminders", handler.GetReminders)
 	mux.HandleFunc("POST /api/reminders", handler.CreateReminder)
+	mux.HandleFunc("PUT /api/reminders", handler.UpdateReminder)
 	mux.HandleFunc("DELETE /api/reminders", handler.DeleteReminder)
 
 	handler := middleware.DB(mux, database)

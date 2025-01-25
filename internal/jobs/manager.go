@@ -14,7 +14,7 @@ type JobManager struct {
 func CreateJobManager() *JobManager {
 	return &JobManager{
 		jobs: map[string]*Job{},
-		stop: make(chan string),
+		stop: make(chan string, 50),
 	}
 }
 
@@ -72,9 +72,39 @@ func (jm *JobManager) RunAllJobs() {
 }
 
 func (jm *JobManager) RunJob(job *Job) {
+	if !job.Active {
+		return
+	}
+
+	jm.runInternalJob(job)
+}
+
+func (jm *JobManager) StartJob(job *Job) {
+	jm.jobs[job.ID].Active = true
+
+	jm.runInternalJob(job)
+}
+
+func (jm *JobManager) StopJob(job *Job) {
+	if _, exists := jm.jobs[job.ID]; !exists {
+		fmt.Printf("Job %s doesn't exist\n", job.ID)
+		return
+	}
+
+	if jm.jobs[job.ID].Active {
+		jm.stop <- job.ID
+		fmt.Printf("Job %s stopped successfully\n", job.ID)
+	} else {
+		fmt.Printf("Job %s is not running\n", job.ID)
+	}
+}
+
+func (jm *JobManager) runInternalJob(job *Job) {
+
 	ticker := jm.ScheduleJob(job.ID)
 
 	go func() {
+
 		for {
 			select {
 			case <-ticker.C:
@@ -91,19 +121,4 @@ func (jm *JobManager) RunJob(job *Job) {
 		}
 	}()
 
-}
-
-func (jm *JobManager) StopJob(job *Job) {
-	if _, exists := jm.jobs[job.ID]; !exists {
-		fmt.Printf("Job %s doesn't exist\n", job.ID)
-		return
-	}
-
-	if job.Active {
-		jm.stop <- job.ID
-		job.Active = false
-		fmt.Printf("Job %s stopped successfully\n", job.ID)
-	} else {
-		fmt.Printf("Job %s is not running\n", job.ID)
-	}
 }

@@ -114,11 +114,11 @@ func DeleteReminder(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	type JobIDPayload struct {
+	type Payload struct {
 		ID string `json:"id"`
 	}
 
-	jobPayload := JobIDPayload{}
+	jobPayload := Payload{}
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't read body")
@@ -152,4 +152,61 @@ func DeleteReminder(w http.ResponseWriter, req *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusNoContent, response)
+}
+
+func UpdateReminder(w http.ResponseWriter, req *http.Request) {
+	db := getDB(req)
+	if db == nil {
+		respondWithError(w, http.StatusInternalServerError, "DB not found")
+		return
+	}
+
+	manager := getManager(req)
+	if manager == nil {
+		respondWithError(w, http.StatusInternalServerError, "Manager not found")
+		return
+	}
+
+	type Payload struct {
+		ID     string `json:"id"`
+		Active bool   `json:"active"`
+	}
+
+	jobPayload := Payload{}
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't read body")
+		return
+	}
+	defer req.Body.Close()
+
+	err = json.Unmarshal(body, &jobPayload)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't unmarshal reminder from body")
+		return
+	}
+
+	job, err := db.UpdateJob(jobPayload.ID, jobPayload.Active)
+	if err != nil {
+		fmt.Println(err)
+		respondWithError(w, http.StatusInternalServerError, "Couldn't update reminder")
+		return
+	}
+
+	if jobPayload.Active {
+		manager.StartJob(job)
+	} else {
+		manager.StopJob(job)
+	}
+
+	response := JobPayload{
+		ID:        job.ID,
+		Message:   job.Message,
+		Interval:  int(job.Interval),
+		Level:     job.Level,
+		Active:    job.Active,
+		CreatedAt: job.CreatedAt,
+	}
+
+	respondWithJSON(w, http.StatusOK, response)
 }

@@ -39,6 +39,7 @@ func init() {
 	rootCmd.AddCommand(createCmd)
 	rootCmd.AddCommand(killCmd)
 	rootCmd.AddCommand(stopCmd)
+	rootCmd.AddCommand(runCmd)
 }
 
 var listCmd = &cobra.Command{
@@ -148,11 +149,11 @@ var killCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		id := args[0]
 
-		type JobIDPayload struct {
+		type Payload struct {
 			ID string `json:"id"`
 		}
 
-		payload := JobIDPayload{
+		payload := Payload{
 			ID: id,
 		}
 
@@ -195,6 +196,91 @@ var stopCmd = &cobra.Command{
 	Short: "Sub command for jobs",
 	Long:  `Fill this later`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Stopping child job id ", args[0])
+		id := args[0]
+
+		type Payload struct {
+			ID     string `json:"id"`
+			Active bool   `json:"active"`
+		}
+
+		payload := Payload{
+			ID:     id,
+			Active: false,
+		}
+
+		jobData, err := json.Marshal(payload)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		req, err := http.NewRequest("PUT", "http://localhost:5678/api/reminders", bytes.NewBuffer(jobData))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+
+		client := &http.Client{}
+		res, err := client.Do(req)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		defer res.Body.Close()
+
+		if res.StatusCode == http.StatusOK {
+			fmt.Println("Job stopped")
+		}
+	},
+}
+
+var runCmd = &cobra.Command{
+	Use: "run",
+	//Acts as a custom validator
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return errors.New("Run command required id of job")
+		}
+
+		return nil
+	},
+	Short: "Sub command for jobs",
+	Long:  `Fill this later`,
+	Run: func(cmd *cobra.Command, args []string) {
+		id := args[0]
+
+		type Payload struct {
+			ID     string `json:"id"`
+			Active bool   `json:"active"`
+		}
+
+		payload := Payload{
+			ID:     id,
+			Active: true,
+		}
+
+		jobData, err := json.Marshal(payload)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		req, err := http.NewRequest("PUT", "http://localhost:5678/api/reminders", bytes.NewBuffer(jobData))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+
+		client := &http.Client{}
+		res, err := client.Do(req)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		defer res.Body.Close()
+
+		if res.StatusCode == http.StatusOK {
+			fmt.Println("Job running")
+		}
 	},
 }

@@ -129,6 +129,36 @@ func (db *DB) DeleteJob(id string) (*jobs.Job, error) {
 	return &job, nil
 }
 
+func (db *DB) UpdateJob(id string, active bool) (*jobs.Job, error) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	data, err := db.loadDB()
+	if err != nil {
+		return nil, err
+	}
+
+  updatedId := ""
+	job := jobs.Job{}
+
+	for jobId, j := range data.Jobs {
+		if id == strings.Split(jobId, "-")[0] {
+      updatedId = jobId
+			job = j
+		}
+	}
+
+	job.Active = active
+	data.Jobs[updatedId] = job
+
+	err = db.writeDB(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &job, nil
+}
+
 func (db *DB) loadDB() (*Data, error) {
 	data := &Data{
 		Jobs: map[string]jobs.Job{},
