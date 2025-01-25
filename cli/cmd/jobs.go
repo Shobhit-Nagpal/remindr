@@ -8,14 +8,18 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Shobhit-Nagpal/remindr/internal/jobs"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
 type JobPayload struct {
-	ID        string  `json:"id"`
+	ID        string     `json:"id"`
 	Message   string     `json:"message"`
 	Interval  int        `json:"interval"`
 	Level     jobs.Level `json:"level"`
@@ -61,14 +65,20 @@ var listCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		if len(jobs) == 0 {
-			fmt.Println("No jobs running")
-		}
+		data := [][]string{}
 
 		for _, job := range jobs {
-			fmt.Println(job)
+			row := []string{strings.Split(job.ID, "-")[0], job.Message, string(job.Level), strconv.Itoa(job.Interval), strconv.FormatBool(job.Active), job.CreatedAt.String()}
+			data = append(data, row)
 		}
 
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader([]string{"ID", "Message", "Level", "Interval", "Active", "Created At"})
+
+		for _, v := range data {
+			table.Append(v)
+		}
+		table.Render() // Send output
 	},
 }
 
