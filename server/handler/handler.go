@@ -102,4 +102,54 @@ func CreateReminder(w http.ResponseWriter, req *http.Request) {
 }
 
 func DeleteReminder(w http.ResponseWriter, req *http.Request) {
+	db := getDB(req)
+	if db == nil {
+		respondWithError(w, http.StatusInternalServerError, "DB not found")
+		return
+	}
+
+	manager := getManager(req)
+	if manager == nil {
+		respondWithError(w, http.StatusInternalServerError, "Manager not found")
+		return
+	}
+
+	type JobIDPayload struct {
+		ID string `json:"id"`
+	}
+
+	jobPayload := JobIDPayload{}
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't read body")
+		return
+	}
+	defer req.Body.Close()
+
+	err = json.Unmarshal(body, &jobPayload)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't unmarshal reminder from body")
+		return
+	}
+
+	job, err := db.DeleteJob(jobPayload.ID)
+	if err != nil {
+		fmt.Println(err)
+		respondWithError(w, http.StatusInternalServerError, "Couldn't create reminder")
+		return
+	}
+
+	manager.StopJob(job)
+	manager.UnregisterJob(job)
+
+	response := JobPayload{
+		ID:        job.ID,
+		Message:   job.Message,
+		Interval:  int(job.Interval),
+		Level:     job.Level,
+		Active:    job.Active,
+		CreatedAt: job.CreatedAt,
+	}
+
+	respondWithJSON(w, http.StatusNoContent, response)
 }

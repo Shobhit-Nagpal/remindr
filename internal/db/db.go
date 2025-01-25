@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/Shobhit-Nagpal/remindr/internal/jobs"
@@ -97,6 +98,35 @@ func (db *DB) ensureDB() error {
 	}
 
 	return nil
+}
+
+func (db *DB) DeleteJob(id string) (*jobs.Job, error) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	data, err := db.loadDB()
+	if err != nil {
+		return nil, err
+	}
+
+	deleteId := ""
+	job := jobs.Job{}
+
+	for jobId, j := range data.Jobs {
+		if id == strings.Split(jobId, "-")[0] {
+			deleteId = jobId
+			job = j
+		}
+	}
+
+	delete(data.Jobs, deleteId)
+
+	err = db.writeDB(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &job, nil
 }
 
 func (db *DB) loadDB() (*Data, error) {

@@ -8,11 +8,13 @@ import (
 
 type JobManager struct {
 	jobs map[string]*Job
+	stop chan string
 }
 
 func CreateJobManager() *JobManager {
 	return &JobManager{
 		jobs: map[string]*Job{},
+		stop: make(chan string),
 	}
 }
 
@@ -29,6 +31,15 @@ func (jm *JobManager) RegisterJobs(jobs []*Job) {
 	for _, job := range jobs {
 		jm.RegisterJob(job)
 	}
+}
+
+func (jm *JobManager) UnregisterJob(job *Job) {
+	if _, exists := jm.jobs[job.ID]; !exists {
+		fmt.Printf("Job doesn't exist")
+		return
+	}
+
+	delete(jm.jobs, job.ID)
 }
 
 func (jm *JobManager) GetAllJobs() map[string]*Job {
@@ -71,8 +82,28 @@ func (jm *JobManager) RunJob(job *Job) {
 				if err != nil {
 					log.Fatal(err)
 				}
+			case id := <-jm.stop:
+				if id == job.ID {
+					ticker.Stop()
+					return
+				}
 			}
 		}
 	}()
 
+}
+
+func (jm *JobManager) StopJob(job *Job) {
+	if _, exists := jm.jobs[job.ID]; !exists {
+		fmt.Printf("Job %s doesn't exist\n", job.ID)
+		return
+	}
+
+	if job.Active {
+		jm.stop <- job.ID
+		job.Active = false
+		fmt.Printf("Job %s stopped successfully\n", job.ID)
+	} else {
+		fmt.Printf("Job %s is not running\n", job.ID)
+	}
 }

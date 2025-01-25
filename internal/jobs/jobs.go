@@ -31,12 +31,12 @@ func CreateJob(message string, interval int, level Level) *Job {
 	id := uuid.New()
 
 	return &Job{
-		ID:       id.String(),
-		Message:  message,
-		Interval: interval,
-		Level:    level,
-		Active:   true,
-		//		createdAt: time.Now(),
+		ID:        id.String(),
+		Message:   message,
+		Interval:  interval,
+		Level:     level,
+		Active:    true,
+		CreatedAt: time.Now(),
 	}
 }
 

@@ -118,6 +118,9 @@ var createCmd = &cobra.Command{
 		}
 
 		jobData, err := json.Marshal(payload)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		res, err := http.Post("http://localhost:5678/api/reminders", "application/json", bytes.NewBuffer(jobData))
 		if err != nil {
@@ -143,7 +146,39 @@ var killCmd = &cobra.Command{
 	Short: "Sub command for jobs",
 	Long:  `Fill this later`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Killing child job id ", args[0])
+		id := args[0]
+
+		type JobIDPayload struct {
+			ID string `json:"id"`
+		}
+
+		payload := JobIDPayload{
+			ID: id,
+		}
+
+		jobData, err := json.Marshal(payload)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		req, err := http.NewRequest("DELETE", "http://localhost:5678/api/reminders", bytes.NewBuffer(jobData))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+
+		client := &http.Client{}
+		res, err := client.Do(req)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		defer res.Body.Close()
+
+		if res.StatusCode == http.StatusNoContent {
+			fmt.Println("Job killed")
+		}
 	},
 }
 
