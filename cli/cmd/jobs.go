@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -42,6 +43,7 @@ func init() {
 	rootCmd.AddCommand(stopCmd)
 	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(setupCmd)
+	rootCmd.AddCommand(destroyCmd)
 }
 
 var listCmd = &cobra.Command{
@@ -334,6 +336,48 @@ var setupCmd = &cobra.Command{
 		fmt.Println("To start the service, run:")
 		fmt.Println("systemctl --user daemon-reload")
 		fmt.Println("systemctl --user enable --now remindr.service")
+	},
+}
+
+var destroyCmd = &cobra.Command{
+	Use:   "destroy",
+	Short: "Remove Remindr service",
+	Long:  `Remove and cleanup the Remindr systemd service file`,
+	Run: func(cmd *cobra.Command, args []string) {
+		// First stop and disable the service
+		stopCmd := exec.Command("systemctl", "--user", "stop", "remindr.service")
+		if err := stopCmd.Run(); err != nil {
+			fmt.Println("Warning: Could not stop service:", err)
+		}
+
+		disableCmd := exec.Command("systemctl", "--user", "disable", "remindr.service")
+		if err := disableCmd.Run(); err != nil {
+			fmt.Println("Warning: Could not disable service:", err)
+		}
+
+		// Get home directory
+		homeDir, err := utils.GetHomeDir()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Remove service file
+		serviceFile := fmt.Sprintf("%s/.config/systemd/user/remindr.service", homeDir)
+		if err := os.Remove(serviceFile); err != nil {
+			if !os.IsNotExist(err) {
+				log.Fatal("Error removing service file:", err)
+			}
+			fmt.Println("Service file not found")
+			return
+		}
+
+		// Reload systemd daemon
+		reloadCmd := exec.Command("systemctl", "--user", "daemon-reload")
+		if err := reloadCmd.Run(); err != nil {
+			fmt.Println("Warning: Could not reload systemd:", err)
+		}
+
+		fmt.Println("Remindr service has been removed successfully")
 	},
 }
 

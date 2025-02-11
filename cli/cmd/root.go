@@ -12,8 +12,7 @@ var rootCmd = &cobra.Command{
 	Short: "Remindr is a reminder service written in Golang for Linux",
 	Long:  "Baadme add kardena",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Yo, just running that root, you know what i mean")
-		fmt.Println(args)
+    cmd.Help()
 	},
 }
 
