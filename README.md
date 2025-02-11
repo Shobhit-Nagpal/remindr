@@ -1,26 +1,25 @@
 # Remindr
 
-Remindr is a recurring reminder application written in Go. It notifies users on Linux using the `libnotify` library and the `dunst` notification daemon. The application consists of a CLI tool and a server that runs as a systemd service.
+Remindr is a recurring reminder application written in Go. It notifies users on Linux using the `libnotify` library and the `dunst` notification daemon. The application consists of a CLI tool and a server that runs as a systemd user service.
 
 ## Features
-- Set recurring reminders via CLI.
-- Notifications delivered via `dunst` on Linux.
-- Easy installation and setup with a single command.
+- Set recurring reminders via CLI
+- Notifications delivered via `dunst` on Linux
+- Easy installation and setup with a single command
+- Runs as a user-level systemd service
 
 ## Dependencies
-- **libnotify**: For sending desktop notifications.
-- **dunst**: A lightweight notification daemon for Linux.
+- **libnotify**: For sending desktop notifications
+- **dunst**: A lightweight notification daemon for Linux
 
 Install the dependencies on Ubuntu/Debian:
 ```bash
 sudo apt-get install libnotify-bin dunst
 ```
 
----
-
 ## Installation
 
-### **Option 1: Install Using the CLI (Recommended)**
+### Install Using Go
 
 1. **Install Go** (if not already installed):
    ```bash
@@ -29,135 +28,108 @@ sudo apt-get install libnotify-bin dunst
 
 2. **Install Remindr**:
    ```bash
-   go install github.com/yourusername/remindr/cli@latest
+   go install github.com/Shobhit-Nagpal/remindr/cli@latest
    ```
 
-3. **Run the Setup Command**:
+3. **Setup the Service**:
    ```bash
-   remindr setup
+   remindr setup /path/to/working/directory
    ```
-
    This will:
-   - Install the server binary to `/usr/local/bin/remindr-server`.
-   - Create a systemd service file at `/etc/systemd/system/remindr.service`.
-   - Enable and start the service.
+   - Create a systemd user service file at `~/.config/systemd/user/remindr.service`
+   - Start the service using `go run`
 
 4. **Verify the Service**:
    ```bash
-   systemctl status remindr.service
+   systemctl --user status remindr.service
    ```
 
----
-
-### **Option 2: Manual Installation**
+### Manual Installation
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/yourusername/remindr.git
+   git clone https://github.com/Shobhit-Nagpal/remindr.git
    cd remindr
    ```
 
-2. **Build the CLI and Server**:
-   ```bash
-   go build -o remindr ./cli
-   go build -o remindr-server ./server
-   ```
-
-3. **Install the Binaries**:
-   ```bash
-   sudo mv remindr /usr/local/bin/
-   sudo mv remindr-server /usr/local/bin/
-   ```
-
-4. **Create the Systemd Service**:
-   Create a service file at `/etc/systemd/system/remindr.service`:
-   ```bash
-   sudo bash -c "cat > /etc/systemd/system/remindr.service" <<EOF
+2. **Create the Systemd User Service**:
+   Create a service file at `~/.config/systemd/user/remindr.service`:
+   ```ini
    [Unit]
-   Description=Remindr Recurring Reminder Application
-   After=network.target
+   Description=Remindr Service
+   After=default.target
 
    [Service]
-   ExecStart=/usr/local/bin/remindr-server
-   Restart=always
-   User=$USER
-   Environment=GO_ENV=production
+   Environment=PATH=/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin
+   ExecStart=go run /path/to/remindr/server/main.go
+   WorkingDirectory=/path/to/remindr/server
+   Restart=on-failure
 
    [Install]
    WantedBy=default.target
-   EOF
    ```
 
-5. **Reload Systemd and Start the Service**:
+3. **Enable and Start the Service**:
    ```bash
-   sudo systemctl daemon-reload
-   sudo systemctl enable remindr.service
-   sudo systemctl start remindr.service
+   systemctl --user daemon-reload
+   systemctl --user enable remindr.service
+   systemctl --user start remindr.service
    ```
-
-6. **Verify the Service**:
-   ```bash
-   systemctl status remindr.service
-   ```
-
----
 
 ## Usage
 
-### **Set a Reminder**
-Use the CLI to set a recurring reminder. For example:
+### Set a Reminder
+Use the CLI to set a recurring reminder:
 ```bash
 remindr create "Meeting in 10 minutes" --interval 600
 ```
 
-### **List Reminders**
+### List Reminders
 View all active reminders:
 ```bash
 remindr list
 ```
 
-### **Stop a Reminder**
+### Stop a Reminder
 Stop a reminder by its ID:
 ```bash
-remindr stop 1
+remindr stop <id>
 ```
 
-### **Run a Reminder**
+### Run a Reminder
 Run a reminder by its ID:
 ```bash
-remindr run 1
+remindr run <id>
 ```
 
-### **Kill a Reminder**
-Kill a reminder by its ID:
+### Remove Service
+To remove the Remindr service:
 ```bash
-remindr kill 1
+remindr destroy
 ```
-
----
 
 ## Troubleshooting
 
-### **Notifications Not Showing**
+### Notifications Not Showing
 Ensure `dunst` is running:
 ```bash
 dunst &
 ```
 
-### **Service Fails to Start**
-Check the logs for errors:
+### Service Fails to Start
+Check the logs:
 ```bash
-journalctl -u remindr.service
+journalctl --user -u remindr.service
 ```
 
----
+### Service Status
+Check service status:
+```bash
+systemctl --user status remindr.service
+```
 
 ## Contributing
 Contributions are welcome! Please open an issue or submit a pull request.
 
----
-
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
----
