@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/Shobhit-Nagpal/remindr/internal/jobs"
+	"github.com/Shobhit-Nagpal/remindr/internal/utils"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
@@ -40,6 +41,7 @@ func init() {
 	rootCmd.AddCommand(killCmd)
 	rootCmd.AddCommand(stopCmd)
 	rootCmd.AddCommand(runCmd)
+	rootCmd.AddCommand(setupCmd)
 }
 
 var listCmd = &cobra.Command{
@@ -283,4 +285,69 @@ var runCmd = &cobra.Command{
 			fmt.Println("Job running")
 		}
 	},
+}
+
+var setupCmd = &cobra.Command{
+	Use:   "setup [working-directory]",
+	Short: "Setup Remindr as a service",
+	Long:  `Setup Remindr as a systemd user service. Requires the working directory path as an argument.`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return errors.New("working directory path is required")
+		}
+
+		// Verify if the directory exists
+		if _, err := os.Stat(args[0]); os.IsNotExist(err) {
+			return fmt.Errorf("working directory does not exist: %s", args[0])
+		}
+		return nil
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		workingDir := args[0]
+
+		// Get home directory
+		homeDir, err := utils.GetHomeDir()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Create systemd user directory if it doesn't exist
+		systemdDir := fmt.Sprintf("%s/.config/systemd/user", homeDir)
+		if err := os.MkdirAll(systemdDir, 0755); err != nil {
+			log.Fatal(err)
+		}
+
+		// Create service file
+		remindrServiceFile := fmt.Sprintf("%s/remindr.service", systemdDir)
+		file, err := os.Create(remindrServiceFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer file.Close()
+
+		content := getServiceFileContent(workingDir)
+		if _, err := file.WriteString(content); err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Printf("Service file created at: %s\n", remindrServiceFile)
+		fmt.Println("To start the service, run:")
+		fmt.Println("systemctl --user daemon-reload")
+		fmt.Println("systemctl --user enable --now remindr.service")
+	},
+}
+
+func getServiceFileContent(workingDir string) string {
+	return fmt.Sprintf(`[Unit]
+Description=Remindr Service
+After=default.target
+
+[Service]
+ExecStart=/usr/bin/go run server/main.go
+WorkingDirectory=%s
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+`, workingDir)
 }
