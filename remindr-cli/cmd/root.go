@@ -9,8 +9,8 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "remindr",
-	Short: "Remindr is a reminder service written in Golang for Linux",
-	Long:  "Baadme add kardena",
+	Short: "Remindr is a recurring reminder service written for Linux users",
+	Long:  "Remindr is a recurring reminder service written for Linux users in Golang. It works similar to Docker where you have to setup a systemd user service for the server and interact with reminders using CLI commands.",
 	Run: func(cmd *cobra.Command, args []string) {
     cmd.Help()
 	},

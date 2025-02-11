@@ -48,8 +48,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "Sub command for listing reminders",
-	Long:  `Fill this later`,
+	Short: "List all reminders",
 	Run: func(cmd *cobra.Command, args []string) {
 		res, err := http.Get("http://localhost:5678/api/reminders")
 		if err != nil {
@@ -89,8 +88,7 @@ var listCmd = &cobra.Command{
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Sub command for jobs",
-	Long:  `Fill this later`,
+	Short: "Create a reminder",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return errors.New("Create command requires a message to create a reminder")
@@ -148,8 +146,7 @@ var killCmd = &cobra.Command{
 
 		return nil
 	},
-	Short: "Sub command for jobs",
-	Long:  `Fill this later`,
+	Short: "Kill a reminder",
 	Run: func(cmd *cobra.Command, args []string) {
 		id := args[0]
 
@@ -197,8 +194,7 @@ var stopCmd = &cobra.Command{
 
 		return nil
 	},
-	Short: "Sub command for jobs",
-	Long:  `Fill this later`,
+	Short: "Stop a reminder",
 	Run: func(cmd *cobra.Command, args []string) {
 		id := args[0]
 
@@ -248,8 +244,7 @@ var runCmd = &cobra.Command{
 
 		return nil
 	},
-	Short: "Sub command for jobs",
-	Long:  `Fill this later`,
+	Short: "Run an inactive reminder",
 	Run: func(cmd *cobra.Command, args []string) {
 		id := args[0]
 
