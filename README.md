@@ -28,7 +28,7 @@ sudo apt-get install libnotify-bin dunst
 
 2. **Install Remindr**:
    ```bash
-   go install github.com/Shobhit-Nagpal/remindr/cli@latest
+   go install github.com/Shobhit-Nagpal/remindr/remindr-cli@latest
    ```
 
 3. **Setup the Service**:
